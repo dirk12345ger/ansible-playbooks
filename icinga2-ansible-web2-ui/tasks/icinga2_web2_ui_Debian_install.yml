@@ -187,7 +187,7 @@
     src: "{{ item }}.j2"
     dest: "/etc/icingaweb2/{{ item }}"
     backup: yes
-    owner: apache
+    owner: www-data
     group: icingaweb2
     mode: 0660
   with_items:
@@ -204,7 +204,7 @@
     src: "modules/monitoring/{{ item }}.j2"
     dest: "/etc/icingaweb2/modules/monitoring/{{ item }}"
     backup: yes
-    owner: apache
+    owner: www-data
     group: icingaweb2
     mode: 0660
   with_items:
@@ -224,7 +224,7 @@
     src: "modules/director/{{ item }}.j2"
     dest: "/etc/icingaweb2/modules/director/{{ item }}"
     backup: yes
-    owner: apache
+    owner: www-data
     group: icingaweb2
     mode: 0660
   with_items:
@@ -238,7 +238,7 @@
     dest: "/etc/icingaweb2/enabledModules/{{ item }}"
     src: "/usr/share/icingaweb2/modules/{{ item }}"
     state: link
-    owner: apache
+    owner: www-data
     group: icingaweb2
   with_items:
     - doc
