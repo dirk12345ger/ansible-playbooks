@@ -1,0 +1,12 @@
+object Endpoint NodeName {
+  host = NodeName
+}
+
+object Zone ZoneName {
+  endpoints = [ NodeName ]
+}
+
+# The icinga2 web2 director module uses this to manage the whole configuration
+object Zone "director-global" {
+      global = true
+}

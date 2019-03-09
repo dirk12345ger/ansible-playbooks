@@ -103,6 +103,25 @@
     target: "{{ icinga2_web2_mysql_schema_debian }}"
   when: icinga_web_db.changed == true
 
+- name: Create an sql file to insert icingaadmin in DB
+  template:
+    src: insert_icingaadmin.sql.j2
+    dest: /tmp/insert_icingaadmin.sql
+    mode: 0640
+
+- name: Import sql to create the icingaadmin
+  mysql_db:
+    state: import
+    name: "{{ icinga2_web2_db }}"
+    target: /tmp/insert_icingaadmin.sql
+  register: mysql_import_output
+  failed_when:
+    - mysql_import_output | failed
+    # When adding this user again mysql detects a duplicate entry and fails
+    # with this error. Since this is the result we expect, it's not an error.
+    - "'ERROR 1062' not in mysql_import_output.msg"
+  notify: restart icinga2
+
 - name: Configure Icinga2 Ido Mysql Feature
   template:
     src: ido-mysql.conf.j2
@@ -135,13 +154,118 @@
     state: directory
     recurse: yes
 
-- name: Create Directory Owner and Group
+# Director database
+- name: create icingaweb2 director database
+  mysql_db:
+    name: "{{ icinga2_director_db }}"
+    state: present
+  notify: restart icinga2
+
+- name: create icingaweb2 director user
+  mysql_user:
+    name: "{{ icinga2_director_db_user }}"
+    password: "{{ icinga2_director_db_pass }}"
+    priv: "{{ icinga2_director_db }}.*:ALL,GRANT"
+  notify: restart icinga2
+
+- name: Create config directories
   file:
-    path: "/etc/icingaweb2/modules/{{ item }}"
-    owner: www-data
-    group: icingaweb2
-    mode: 0755
+    path: "{{ item }}"
     state: directory
+    mode: "0760"
+    owner: apache
+    group: icingaweb2
   with_items:
+    - /etc/icingaweb2/modules/monitoring
+    - /etc/icingaweb2/modules/director
+    - /etc/icingaweb2/enabledModules
+  notify:
+    - restart icinga2
+
+- name: Deploy icingaweb2 config files
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/icingaweb2/{{ item }}"
+    backup: yes
+    owner: apache
+    group: icingaweb2
+    mode: 0660
+  with_items:
+    - groups.ini
+    - resources.ini
+    - config.ini
+    - authentication.ini
+    - roles.ini
+  notify:
+    - restart icinga2
+
+- name: Deploy icingaweb2 monitoring config files
+  template:
+    src: "modules/monitoring/{{ item }}.j2"
+    dest: "/etc/icingaweb2/modules/monitoring/{{ item }}"
+    backup: yes
+    owner: apache
+    group: icingaweb2
+    mode: 0660
+  with_items:
+    - config.ini
+    - backends.ini
+    - commandtransports.ini
+  notify:
+    - restart icinga2
+
+- name: Install/update director (Configuation GUI)
+  git:
+    dest: /usr/share/icingaweb2/modules/director/
+    repo: https://github.com/Icinga/icingaweb2-module-director.git
+
+- name: Deploy director config files
+  template:
+    src: "modules/director/{{ item }}.j2"
+    dest: "/etc/icingaweb2/modules/director/{{ item }}"
+    backup: yes
+    owner: apache
+    group: icingaweb2
+    mode: 0660
+  with_items:
+    - config.ini
+    - kickstart.ini
+  notify:
+    - restart icinga2
+
+- name: Enable icingaweb2 modules
+  file:
+    dest: "/etc/icingaweb2/enabledModules/{{ item }}"
+    src: "/usr/share/icingaweb2/modules/{{ item }}"
+    state: link
+    owner: apache
+    group: icingaweb2
+  with_items:
+    - doc
     - monitoring
-    - translation
+    - director
+  notify:
+    - restart icinga2
+
+#- name: Fix SELinux permissions for /etc/icingaweb2
+#  file:
+#    path: /etc/icingaweb2
+#    setype: httpd_sys_rw_content_t
+#    recurse: yes
+
+- name: Allow apache to connect to the network (Director exec's curl from PHP for reasons unknown!)
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+
+- name: Deploy icingaweb2 director schema
+  command: /bin/icingacli director migration run
+
+- name: Flush handlers (restart icinga2 if needed)
+  meta: flush_handlers
+
+- name: Deploy icingaweb2 director configuration
+  command: /bin/icingacli director kickstart run
+  notify:
+    - restart icinga2
