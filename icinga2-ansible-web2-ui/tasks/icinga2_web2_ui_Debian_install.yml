@@ -173,7 +173,7 @@
     path: "{{ item }}"
     state: directory
     mode: "0760"
-    owner: apache
+    owner: www-data
     group: icingaweb2
   with_items:
     - /etc/icingaweb2/modules/monitoring
