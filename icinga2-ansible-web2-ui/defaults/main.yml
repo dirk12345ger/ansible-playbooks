@@ -23,6 +23,7 @@ icinga2_web2_admin_pass_hash: "$1$/Wh4PYuF$h8mobrooSWQJ8zybbhrm60" # Hash of ici
 icinga2_director_db: "icingadir"
 icinga2_director_db_pass: "icingadir"
 icinga2_director_db_user: "icingadir"
+icinga2_director_mysql_schema_debian: "/usr/share/icingaweb2/modules/director/schema/mysql.sql"
 
 icinga2_director_endpoint: "{{ ansible_fqdn }}"
 
