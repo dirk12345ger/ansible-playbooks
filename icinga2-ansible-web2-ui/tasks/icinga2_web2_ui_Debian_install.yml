@@ -100,7 +100,7 @@
     - restart icinga2
 
 - name: Configure API
-  command: /sbin/icinga2 api setup
+  command: /usr//sbin/icinga2 api setup
   args:
     creates:
       - /etc/icinga2/pki/{{ ansible_fqdn }}.key
@@ -337,12 +337,12 @@
 #    persistent: yes
 
 - name: Deploy icingaweb2 director schema
-  command: /bin/icingacli director migration run
+  command: /usr/bin/icingacli director migration run
 
 - name: Flush handlers (restart icinga2 if needed)
   meta: flush_handlers
 
 - name: Deploy icingaweb2 director configuration
-  command: /bin/icingacli director kickstart run
+  command: /usr/bin/icingacli director kickstart run
   notify:
     - restart icinga2
