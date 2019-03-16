@@ -169,12 +169,12 @@
     priv: "{{ icinga2_director_db }}.*:ALL,GRANT"
   notify: restart icinga2
 
-- name: Import the Director Schema on Icinga Director Database (only once)
-  mysql_db:
-    name: "{{ icinga2_director_db }}"
-    state: import
-    target: "{{ icinga2_director_mysql_schema_debian }}"
-  when: icinga_dir_db.changed == true
+#- name: Import the Director Schema on Icinga Director Database (only once)
+#  mysql_db:
+#    name: "{{ icinga2_director_db }}"
+#    state: import
+#    target: "{{ icinga2_director_mysql_schema_debian }}"
+#  when: icinga_dir_db.changed == true
 
 - name: Create config directories
   file:
